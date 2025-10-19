@@ -31,7 +31,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- Clean Code Standards: Code must follow clean code principles (meaningful names, small functions, DRY)
+- SOLID Principles: Architecture must adhere to SOLID design principles
+- Test-Driven Development: TDD mandatory with >80% unit test coverage
+- User-Centric Design: UX validation required, accessibility compliance (WCAG 2.1 AA)
+- Continuous Improvement: Performance benchmarks and user satisfaction metrics tracked
 
 ## Project Structure
 

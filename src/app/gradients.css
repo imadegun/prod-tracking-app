@@ -1,0 +1,146 @@
+/* Gradient Teal Orange Color Scheme */
+
+:root {
+  /* Primary Gradient Colors */
+  --gradient-teal: #14b8a6;
+  --gradient-teal-light: #5eead4;
+  --gradient-teal-dark: #0f766e;
+  
+  --gradient-orange: #f97316;
+  --gradient-orange-light: #fb923c;
+  --gradient-orange-dark: #ea580c;
+  
+  /* Gradient Definitions */
+  --gradient-primary: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+  --gradient-secondary: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+  --gradient-accent: linear-gradient(135deg, #14b8a6 0%, #f97316 100%);
+  --gradient-hero: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #f97316 100%);
+  --gradient-subtle: linear-gradient(135deg, #5eead4 0%, #fb923c 100%);
+  
+  /* Solid Colors for Components */
+  --gradient-teal-50: #f0fdfa;
+  --gradient-teal-100: #ccfbf1;
+  --gradient-teal-200: #99f6e4;
+  --gradient-teal-300: #5eead4;
+  --gradient-teal-400: #2dd4bf;
+  --gradient-teal-500: #14b8a6;
+  --gradient-teal-600: #0d9488;
+  --gradient-teal-700: #0f766e;
+  --gradient-teal-800: #115e59;
+  --gradient-teal-900: #134e4a;
+  
+  --gradient-orange-50: #fff7ed;
+  --gradient-orange-100: #ffedd5;
+  --gradient-orange-200: #fed7aa;
+  --gradient-orange-300: #fdba74;
+  --gradient-orange-400: #fb923c;
+  --gradient-orange-500: #f97316;
+  --gradient-orange-600: #ea580c;
+  --gradient-orange-700: #c2410c;
+  --gradient-orange-800: #9a3412;
+  --gradient-orange-900: #7c2d12;
+}
+
+/* Gradient Utility Classes */
+.bg-gradient-teal {
+  background: var(--gradient-primary);
+}
+
+.bg-gradient-orange {
+  background: var(--gradient-secondary);
+}
+
+.bg-gradient-accent {
+  background: var(--gradient-accent);
+}
+
+.bg-gradient-hero {
+  background: var(--gradient-hero);
+}
+
+.bg-gradient-subtle {
+  background: var(--gradient-subtle);
+}
+
+.text-gradient-teal {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-orange {
+  background: var(--gradient-secondary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-accent {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Border Gradients */
+.border-gradient-teal {
+  border: 2px solid;
+  border-image: var(--gradient-primary) 1;
+}
+
+.border-gradient-orange {
+  border: 2px solid;
+  border-image: var(--gradient-secondary) 1;
+}
+
+/* Hover Effects */
+.hover-gradient-teal:hover {
+  background: var(--gradient-primary);
+  color: white;
+}
+
+.hover-gradient-orange:hover {
+  background: var(--gradient-secondary);
+  color: white;
+}
+
+/* Shadow Effects */
+.shadow-gradient-teal {
+  box-shadow: 0 4px 14px 0 rgba(20, 184, 166, 0.39);
+}
+
+.shadow-gradient-orange {
+  box-shadow: 0 4px 14px 0 rgba(249, 115, 22, 0.39);
+}
+
+/* Glassmorphism with Gradient */
+.glass-gradient-teal {
+  background: rgba(20, 184, 166, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(20, 184, 166, 0.2);
+}
+
+.glass-gradient-orange {
+  background: rgba(249, 115, 22, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(249, 115, 22, 0.2);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gradient-teal-50);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gradient-teal-600);
+}

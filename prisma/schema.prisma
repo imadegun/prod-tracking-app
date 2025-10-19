@@ -1,0 +1,259 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String   @unique
+  address   String?
+  phone     String?
+  email     String?
+  settings  String   @default("{}") // JSON as string for SQLite
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  operators         Operator[]
+  clients           Client[]
+  products          Product[]
+  productionOrders  ProductionOrder[]
+  productionStages  ProductionStage[]
+  workPlans         WorkPlan[]
+  alerts            Alert[]
+  monthlyTargets    MonthlyTarget[]
+
+  @@map("companies")
+}
+
+model User {
+  id            Int      @id @default(autoincrement())
+  companyId     Int
+  username      String   @unique
+  email         String   @unique
+  passwordHash  String
+  role          String   // superadmin, admin, inputdata
+  fullName      String?
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recordedProduction  ProductionRecord[]   @relation("RecordedBy")
+  resolvedAlerts      Alert[]              @relation("ResolvedBy")
+  createdTargets      MonthlyTarget[]      @relation("CreatedBy")
+
+  @@map("users")
+}
+
+model Operator {
+  id          Int      @id @default(autoincrement())
+  companyId   Int
+  employeeId  String   @unique
+  fullName    String
+  skills      String   // JSON string array for SQLite
+  hireDate    DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workPlans WorkPlan[]
+
+  @@map("operators")
+}
+
+model Client {
+  id            Int      @id @default(autoincrement())
+  companyId     Int
+  name          String
+  department    String?
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productionOrders ProductionOrder[]
+
+  @@map("clients")
+}
+
+model Product {
+  id              Int      @id @default(autoincrement())
+  companyId       Int
+  code            String   @unique
+  name            String
+  color           String?
+  texture         String?
+  material        String?
+  notes           String?
+  standardTime    Float?   // hours per unit
+  difficultyLevel Int?     // 1-5
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  productionOrderItems ProductionOrderItem[]
+  workPlans           WorkPlan[]
+  monthlyTargets      MonthlyTarget[]
+
+  @@map("products")
+}
+
+model ProductionOrder {
+  id           Int      @id @default(autoincrement())
+  companyId    Int
+  clientId     Int
+  poNo         String   @unique
+  deliveryDate DateTime
+  priority     Int      @default(1) // 1=normal, 2=high, 3=urgent
+  status       String   @default("pending") // pending, in_progress, completed, cancelled
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company          Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  client           Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  productionOrderItems ProductionOrderItem[]
+  workPlans       WorkPlan[]
+
+  @@map("production_orders")
+}
+
+model ProductionOrderItem {
+  id                 Int @id @default(autoincrement())
+  productionOrderId  Int
+  productId          Int
+  qtyOrdered         Int
+  notes              String?
+
+  productionOrder    ProductionOrder     @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  workPlans          WorkPlan[]
+
+  @@map("production_order_items")
+}
+
+model ProductionStage {
+  id             Int      @id @default(autoincrement())
+  companyId      Int
+  name           String
+  code           String   @unique
+  description    String?
+  displayOrder   Int      @default(0)
+  backgroundColor String? // Hex color for calendar
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workPlans WorkPlan[]
+
+  @@map("production_stages")
+}
+
+model WorkPlan {
+  id                      Int      @id @default(autoincrement())
+  companyId               Int
+  weekStart               DateTime // Monday of the week
+  operatorId              Int
+  productionOrderId       Int
+  productionOrderItemId   Int
+  productId               Int
+  productionStageId       Int
+  decorationDetail        String?  // For decoration stage specifics
+  targetQuantity          Int
+  plannedDate             DateTime
+  isOvertime              Boolean  @default(false)
+  notes                   String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  company             Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  operator            Operator            @relation(fields: [operatorId], references: [id], onDelete: Restrict)
+  productionOrder      ProductionOrder    @relation(fields: [productionOrderId], references: [id], onDelete: Restrict)
+  productionOrderItem  ProductionOrderItem @relation(fields: [productionOrderItemId], references: [id], onDelete: Restrict)
+  product              Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productionStage      ProductionStage    @relation(fields: [productionStageId], references: [id], onDelete: Restrict)
+  productionRecords    ProductionRecord[]
+
+  @@unique([companyId, weekStart, operatorId, plannedDate, productionStageId])
+  @@map("work_plans")
+}
+
+model ProductionRecord {
+  id                Int      @id @default(autoincrement())
+  workPlanId        Int
+  recordedDate      DateTime
+  recordedBy        Int
+  completedQuantity Int      @default(0)
+  goodQuantity      Int      @default(0)
+  rejectQuantity    Int      @default(0)
+  rejectStage       String?
+  rejectReason      String?
+  startTime         DateTime?
+  endTime           DateTime?
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  workPlan  WorkPlan @relation(fields: [workPlanId], references: [id], onDelete: Restrict)
+  recorder  User     @relation("RecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
+
+  @@unique([workPlanId, recordedDate])
+  @@map("production_records")
+}
+
+model Alert {
+  id               Int      @id @default(autoincrement())
+  companyId        Int
+  alertType        String   // reject_limit_exceeded, target_missed, etc.
+  severity         String   @default("medium") // low, medium, high, critical
+  title            String
+  message          String
+  relatedRecordId  Int?     // Can reference various records
+  relatedRecordType String? // work_plan, production_record, etc.
+  isResolved       Boolean  @default(false)
+  resolvedAt       DateTime?
+  resolvedBy       Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  resolver   User?   @relation("ResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@map("alerts")
+}
+
+model MonthlyTarget {
+  id            Int      @id @default(autoincrement())
+  companyId     Int
+  productId     Int
+  targetMonth   DateTime // First day of month
+  targetQuantity Int
+  createdBy     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  creator User?   @relation("CreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@unique([companyId, productId, targetMonth])
+  @@map("monthly_targets")
+}
