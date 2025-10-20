@@ -24,7 +24,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Plus, Edit, Package, Calendar, User, AlertCircle } from 'lucide-react'
+import { Plus, Edit, Package, Calendar, User, AlertCircle, Trash2 } from 'lucide-react'
 
 interface ProductionOrder {
   id: number
@@ -33,8 +33,8 @@ interface ProductionOrder {
   client: {
     id: number
     name: string
+    region: string
     department: string
-    contactPerson: string
   }
   deliveryDate: string
   priority: number
@@ -56,14 +56,15 @@ interface ProductionOrderItem {
     color: string
   }
   qtyOrdered: number
+  qtyForming: number
   notes: string
 }
 
 interface Client {
   id: number
   name: string
+  region: string
   department: string
-  contactPerson: string
 }
 
 interface Product {
@@ -103,6 +104,7 @@ export default function OrdersPage() {
     items: [] as Array<{
       productId: string
       qtyOrdered: string
+      qtyForming: string
       notes: string
     }>
   })
@@ -129,9 +131,11 @@ export default function OrdersPage() {
       render: (value: Client) => (
         <div>
           <div className="font-medium">{value.name}</div>
-          {value.department && (
-            <div className="text-sm text-muted-foreground">{value.department}</div>
-          )}
+          <div className="text-sm text-muted-foreground">
+            {value.region && `${value.region}`}
+            {value.region && value.department && ' • '}
+            {value.department && `${value.department}`}
+          </div>
         </div>
       )
     },
@@ -271,6 +275,7 @@ export default function OrdersPage() {
         orderItems: formData.items.map(item => ({
           productId: item.productId,
           qtyOrdered: item.qtyOrdered,
+          qtyForming: item.qtyForming || Math.round(Number(item.qtyOrdered) * 1.15),
           notes: item.notes
         }))
       }
@@ -297,16 +302,22 @@ export default function OrdersPage() {
 
   const handleEdit = (order: ProductionOrder) => {
     setEditingOrder(order)
+    
+    // Format the delivery date for the input field (YYYY-MM-DD)
+    const formattedDeliveryDate = order.deliveryDate ? 
+      new Date(order.deliveryDate).toISOString().split('T')[0] : ''
+    
     setFormData({
       poNo: order.poNo,
       clientId: order.clientId.toString(),
-      deliveryDate: order.deliveryDate,
+      deliveryDate: formattedDeliveryDate,
       priority: order.priority,
       status: order.status,
       notes: order.notes || '',
       items: order.items.map(item => ({
         productId: item.productId.toString(),
         qtyOrdered: item.qtyOrdered.toString(),
+        qtyForming: (item.qtyForming || Math.round(item.qtyOrdered * 1.15)).toString(),
         notes: item.notes || ''
       }))
     })
@@ -345,7 +356,7 @@ export default function OrdersPage() {
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { productId: '', qtyOrdered: '', notes: '' }]
+      items: [...prev.items, { productId: '', qtyOrdered: '', qtyForming: '', notes: '' }]
     }))
   }
 
@@ -357,12 +368,25 @@ export default function OrdersPage() {
   }
 
   const updateItem = (index: number, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      items: prev.items.map((item, i) => 
-        i === index ? { ...item, [field]: value } : item
-      )
-    }))
+    setFormData(prev => {
+      const updatedItems = prev.items.map((item, i) => {
+        if (i === index) {
+          const updatedItem = { ...item, [field]: value }
+          
+          // Auto-calculate qtyForming when qtyOrdered changes
+          if (field === 'qtyOrdered' && value && !isNaN(Number(value))) {
+            const qtyOrdered = Number(value)
+            const calculatedForming = Math.round(qtyOrdered * 1.15) // Add 15% and round
+            updatedItem.qtyForming = calculatedForming.toString()
+          }
+          
+          return updatedItem
+        }
+        return item
+      })
+      
+      return { ...prev, items: updatedItems }
+    })
   }
 
   return (
@@ -390,7 +414,7 @@ export default function OrdersPage() {
 
       {/* Add/Edit Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingOrder ? 'Edit Production Order' : 'Add New Production Order'}
@@ -403,8 +427,9 @@ export default function OrdersPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* First Row - Basic Order Information */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="poNo">PO Number *</Label>
                 <Input
@@ -413,23 +438,28 @@ export default function OrdersPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, poNo: e.target.value }))}
                   placeholder="e.g., PO-2024-001"
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="clientId">Client *</Label>
                 <Select value={formData.clientId} onValueChange={(value) => setFormData(prev => ({ ...prev, clientId: value }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select client" />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id.toString()}>
-                        {client.name} {client.department && `(${client.department})`}
+                        {client.name}-{client.region || 'No Region'}-{client.department || 'No Department'}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Second Row - Delivery Date and Priority/Status */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="deliveryDate">Delivery Date *</Label>
                 <Input
@@ -438,18 +468,16 @@ export default function OrdersPage() {
                   value={formData.deliveryDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, deliveryDate: e.target.value }))}
                   required
+                  className="w-full"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
                 <Select 
                   value={formData.priority.toString()} 
                   onValueChange={(value) => setFormData(prev => ({ ...prev, priority: parseInt(value) }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -467,7 +495,7 @@ export default function OrdersPage() {
                   value={formData.status} 
                   onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -481,6 +509,7 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {/* Notes Section */}
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -488,7 +517,8 @@ export default function OrdersPage() {
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Additional notes about this order..."
-                rows={3}
+                rows={4}
+                className="w-full resize-none"
               />
             </div>
 
@@ -509,59 +539,94 @@ export default function OrdersPage() {
                   <p className="text-sm text-muted-foreground">Click "Add Item" to add products to this order</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-6">
                   {formData.items.map((item, index) => (
-                    <Card key={index}>
-                      <CardContent className="pt-6">
-                        <div className="grid grid-cols-12 gap-4 items-end">
-                          <div className="col-span-5 space-y-2">
-                            <Label>Product *</Label>
+                    <Card key={index} className="border-2 shadow-sm">
+                      <CardContent className="p-6">
+                        {/* Header with Remove Button */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                            <span className="font-medium text-sm text-muted-foreground">Item {index + 1}</span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeItem(index)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Main Product and Quantity Fields */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-4">
+                          <div className="space-y-2">
+                            <Label htmlFor={`product-${index}`}>Product *</Label>
                             <Select 
                               value={item.productId} 
                               onValueChange={(value) => updateItem(index, 'productId', value)}
                             >
-                              <SelectTrigger>
+                              <SelectTrigger id={`product-${index}`} className="w-full">
                                 <SelectValue placeholder="Select product" />
                               </SelectTrigger>
                               <SelectContent>
                                 {products.map(product => (
                                   <SelectItem key={product.id} value={product.id.toString()}>
-                                    {product.code} - {product.name} {product.color && `(${product.color})`}
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{product.code} - {product.name}</span>
+                                      {product.color && (
+                                        <span className="text-sm text-muted-foreground">Color: {product.color}</span>
+                                      )}
+                                    </div>
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="col-span-3 space-y-2">
-                            <Label>Quantity *</Label>
+                          <div className="space-y-2">
+                            <Label htmlFor={`quantity-${index}`}>Quantity *</Label>
                             <Input
+                              id={`quantity-${index}`}
                               type="number"
                               min="1"
                               value={item.qtyOrdered}
                               onChange={(e) => updateItem(index, 'qtyOrdered', e.target.value)}
                               placeholder="0"
                               required
-                            />
-                          </div>
-                          <div className="col-span-3 space-y-2">
-                            <Label>Notes</Label>
-                            <Input
-                              value={item.notes}
-                              onChange={(e) => updateItem(index, 'notes', e.target.value)}
-                              placeholder="Item notes..."
-                            />
-                          </div>
-                          <div className="col-span-1">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeItem(index)}
                               className="w-full"
-                            >
-                              Remove
-                            </Button>
+                            />
                           </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`qtyForming-${index}`}>Qty Forming *</Label>
+                            <Input
+                              id={`qtyForming-${index}`}
+                              type="number"
+                              min="1"
+                              value={item.qtyForming}
+                              onChange={(e) => updateItem(index, 'qtyForming', e.target.value)}
+                              placeholder="Auto-calculated (15% extra)"
+                              required
+                              className="w-full"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Auto-calculated as Qty + 15% (editable)
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Full-width Notes Field */}
+                        <div className="space-y-2">
+                          <Label htmlFor={`notes-${index}`}>Notes</Label>
+                          <Textarea
+                            id={`notes-${index}`}
+                            value={item.notes}
+                            onChange={(e) => updateItem(index, 'notes', e.target.value)}
+                            placeholder="Enter any specific notes or requirements for this item..."
+                            rows={3}
+                            className="w-full resize-none"
+                          />
                         </div>
                       </CardContent>
                     </Card>

@@ -107,6 +107,14 @@ export async function POST(request: NextRequest) {
           error: 'Each order item must have a valid product and quantity' 
         }, { status: 400 })
       }
+      
+      // Validate qtyForming or calculate it
+      const qtyForming = item.qtyForming ? parseInt(item.qtyForming) : Math.round(parseInt(item.qtyOrdered) * 1.15)
+      if (qtyForming <= 0) {
+        return NextResponse.json({ 
+          error: 'Each order item must have a valid forming quantity' 
+        }, { status: 400 })
+      }
     }
 
     // Create production order with items in a transaction
@@ -132,6 +140,7 @@ export async function POST(request: NextRequest) {
               productionOrderId: productionOrder.id,
               productId: parseInt(item.productId),
               qtyOrdered: parseInt(item.qtyOrdered),
+              qtyForming: item.qtyForming ? parseInt(item.qtyForming) : Math.round(parseInt(item.qtyOrdered) * 1.15),
               notes: item.notes || null
             }
           })

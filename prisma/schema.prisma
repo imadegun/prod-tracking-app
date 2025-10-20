@@ -140,6 +140,7 @@ model ProductionOrderItem {
   productionOrderId  Int
   productId          Int
   qtyOrdered         Int
+  qtyForming         Int      @default(0)
   notes              String?
 
   productionOrder    ProductionOrder     @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
