@@ -22,15 +22,16 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users             User[]
-  operators         Operator[]
-  clients           Client[]
-  products          Product[]
-  productionOrders  ProductionOrder[]
-  productionStages  ProductionStage[]
-  workPlans         WorkPlan[]
-  alerts            Alert[]
-  monthlyTargets    MonthlyTarget[]
+  users                  User[]
+  operators              Operator[]
+  clients                Client[]
+  products               Product[]
+  productionOrders       ProductionOrder[]
+  productionStages       ProductionStage[]
+  workPlans              WorkPlan[]
+  alerts                 Alert[]
+  monthlyTargets         MonthlyTarget[]
+  performanceAppraisals  PerformanceAppraisal[]
 
   @@map("companies")
 }
@@ -48,10 +49,12 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  recordedProduction  ProductionRecord[]   @relation("RecordedBy")
-  resolvedAlerts      Alert[]              @relation("ResolvedBy")
-  createdTargets      MonthlyTarget[]      @relation("CreatedBy")
+  company               Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  recordedProduction    ProductionRecord[]   @relation("RecordedBy")
+  resolvedAlerts        Alert[]              @relation("ResolvedBy")
+  createdTargets        MonthlyTarget[]      @relation("CreatedBy")
+  recordedAppraisals    PerformanceAppraisal[] @relation("RecordedBy")
+  resolvedAppraisals    PerformanceAppraisal[] @relation("ResolvedBy")
 
   @@map("users")
 }
@@ -61,14 +64,14 @@ model Operator {
   companyId   Int
   employeeId  String   @unique
   fullName    String
-  skills      String   // JSON string array for SQLite
   hireDate    DateTime?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  workPlans WorkPlan[]
+  company               Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workPlans             WorkPlan[]
+  performanceAppraisals PerformanceAppraisal[]
 
   @@map("operators")
 }
@@ -212,8 +215,9 @@ model ProductionRecord {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  workPlan  WorkPlan @relation(fields: [workPlanId], references: [id], onDelete: Restrict)
-  recorder  User     @relation("RecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
+  workPlan             WorkPlan              @relation(fields: [workPlanId], references: [id], onDelete: Restrict)
+  recorder             User                  @relation("RecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
+  performanceAppraisals PerformanceAppraisal[]
 
   @@unique([workPlanId, recordedDate])
   @@map("production_records")
@@ -256,4 +260,33 @@ model MonthlyTarget {
 
   @@unique([companyId, productId, targetMonth])
   @@map("monthly_targets")
+}
+
+model PerformanceAppraisal {
+  id                Int      @id @default(autoincrement())
+  companyId         Int
+  operatorId        Int
+  productionRecordId Int?    // Link to specific production record if applicable
+  appraisalDate     DateTime
+  appraisalType     String   // "success" or "human_error"
+  category          String   // Performance category (e.g., "quality", "efficiency", "safety")
+  description       String   // Detailed description of performance or error
+  severity          String?  // For errors: "low", "medium", "high", "critical"
+  impact            String?  // Impact on production (e.g., "delay", "rework", "waste")
+  correctiveAction  String?  // Action taken to address the error
+  preventionAction  String?  // Future prevention measures
+  recordedBy        Int      // User who recorded the appraisal
+  isResolved        Boolean  @default(false) // For errors only
+  resolvedAt        DateTime?
+  resolvedBy        Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  company           Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  operator          Operator          @relation(fields: [operatorId], references: [id], onDelete: Cascade)
+  productionRecord  ProductionRecord? @relation(fields: [productionRecordId], references: [id], onDelete: SetNull)
+  recorder          User              @relation("RecordedBy", fields: [recordedBy], references: [id], onDelete: Restrict)
+  resolver          User?             @relation("ResolvedBy", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@map("performance_appraisals")
 }

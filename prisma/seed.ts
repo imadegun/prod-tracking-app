@@ -212,6 +212,7 @@ async function main() {
   // Create monthly targets for current month
   const currentMonth = new Date()
   currentMonth.setDate(1) // First day of current month
+  currentMonth.setHours(0, 0, 0, 0) // Set to start of day
 
   for (const product of products) {
     const productRecord = await prisma.product.findFirst({ where: { code: product.code } })

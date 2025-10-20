@@ -5,7 +5,6 @@ import { z } from 'zod'
 const updateOperatorSchema = z.object({
   employeeId: z.string().min(1, 'Employee ID is required'),
   fullName: z.string().min(1, 'Full name is required'),
-  skills: z.array(z.string()).default([]),
   hireDate: z.string().optional(),
   isActive: z.boolean().default(true)
 })
@@ -64,7 +63,6 @@ export async function PUT(
       data: {
         employeeId: validatedData.employeeId,
         fullName: validatedData.fullName,
-        skills: validatedData.skills,
         hireDate: validatedData.hireDate ? new Date(validatedData.hireDate) : null,
         isActive: validatedData.isActive
       }

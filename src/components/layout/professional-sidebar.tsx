@@ -25,7 +25,8 @@ import {
   AlertTriangle,
   TrendingUp,
   Archive,
-  HelpCircle
+  HelpCircle,
+  Star
 } from 'lucide-react'
 
 interface NavigationItem {
@@ -58,6 +59,7 @@ const navigationConfig = {
         group: 'Management',
         items: [
           { name: 'Operators', href: '/admin/operators', icon: Users, description: 'Manage operators' },
+          { name: 'Performance', href: '/admin/performance-appraisals', icon: Star, description: 'Performance appraisals' },
           { name: 'Clients', href: '/admin/clients', icon: Building, description: 'Client management' },
           { name: 'Products', href: '/admin/products', icon: Package, description: 'Product catalog' },
           { name: 'Orders', href: '/admin/orders', icon: FileText, description: 'Production orders' },

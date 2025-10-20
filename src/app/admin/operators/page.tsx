@@ -13,44 +13,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Plus, Edit, User, Calendar, MapPin, Mail, Phone } from 'lucide-react'
+import { Plus, Edit, User, Calendar } from 'lucide-react'
 
 interface Operator {
   id: number
   employeeId: string
   fullName: string
-  skills: string[]
   hireDate: string
   isActive: boolean
   createdAt: string
   updatedAt: string
 }
-
-const AVAILABLE_SKILLS = [
-  'Throwing',
-  'Trimming', 
-  'Decoration',
-  'Drying',
-  'Bisquit Loading',
-  'Bisquit Firing',
-  'Bisquit Exit',
-  'Sanding/Waxing',
-  'Glazing',
-  'High-Fire',
-  'Quality Control'
-]
 
 export default function OperatorsPage() {
   const [operators, setOperators] = useState<Operator[]>([])
@@ -60,7 +36,6 @@ export default function OperatorsPage() {
   const [formData, setFormData] = useState({
     employeeId: '',
     fullName: '',
-    skills: [] as string[],
     hireDate: '',
     isActive: true
   })
@@ -87,26 +62,6 @@ export default function OperatorsPage() {
       )
     },
     {
-      key: 'skills',
-      title: 'Skills',
-      filterable: true,
-      filterOptions: AVAILABLE_SKILLS.map(skill => ({ value: skill, label: skill })),
-      render: (value: string[]) => (
-        <div className="flex flex-wrap gap-1">
-          {Array.isArray(value) && value.slice(0, 3).map((skill, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {skill}
-            </Badge>
-          ))}
-          {Array.isArray(value) && value.length > 3 && (
-            <Badge variant="outline" className="text-xs">
-              +{value.length - 3} more
-            </Badge>
-          )}
-        </div>
-      )
-    },
-    {
       key: 'hireDate',
       title: 'Hire Date',
       sortable: true,
@@ -126,9 +81,13 @@ export default function OperatorsPage() {
         { value: 'false', label: 'Inactive' }
       ],
       render: (value) => (
-        <Badge variant={value ? 'default' : 'secondary'}>
+        <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+          value 
+            ? 'bg-green-100 text-green-800' 
+            : 'bg-gray-100 text-gray-800'
+        }`}>
           {value ? 'Active' : 'Inactive'}
-        </Badge>
+        </div>
       )
     },
     {
@@ -191,17 +150,31 @@ export default function OperatorsPage() {
   const handleEdit = (operator: Operator) => {
     setEditingOperator(operator)
     setFormData({
-      employeeId: operator.employeeId,
-      fullName: operator.fullName,
-      skills: operator.skills,
-      hireDate: operator.hireDate,
-      isActive: operator.isActive
+      employeeId: operator.employeeId || '',
+      fullName: operator.fullName || '',
+      hireDate: operator.hireDate ? new Date(operator.hireDate).toISOString().split('T')[0] : '',
+      isActive: operator.isActive ?? true
     })
     setDialogOpen(true)
   }
 
   const handleDelete = async (operator: Operator) => {
-    // This will be handled by the DataGrid component
+    try {
+      const response = await fetch(`/api/operators/${operator.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete operator')
+      }
+      
+      toast.success('Operator deleted successfully')
+      fetchOperators()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to delete operator')
+      console.error('Delete error:', error)
+    }
   }
 
   const resetForm = () => {
@@ -209,26 +182,16 @@ export default function OperatorsPage() {
     setFormData({
       employeeId: '',
       fullName: '',
-      skills: [],
       hireDate: '',
       isActive: true
     })
-  }
-
-  const handleSkillToggle = (skill: string, checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      skills: checked 
-        ? [...prev.skills, skill]
-        : prev.skills.filter(s => s !== skill)
-    }))
   }
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Operators Management</h1>
-        <p className="text-muted-foreground">Manage production operators and their skills</p>
+        <p className="text-muted-foreground">Manage production operators</p>
       </div>
 
       <DataGrid
@@ -236,7 +199,7 @@ export default function OperatorsPage() {
         columns={columns}
         loading={loading}
         title="Operators"
-        searchPlaceholder="Search by name, employee ID, or skills..."
+        searchPlaceholder="Search by name or employee ID..."
         onAdd={() => {
           resetForm()
           setDialogOpen(true)
@@ -249,7 +212,7 @@ export default function OperatorsPage() {
 
       {/* Add/Edit Operator Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingOperator ? 'Edit Operator' : 'Add New Operator'}
@@ -263,27 +226,26 @@ export default function OperatorsPage() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="employeeId">Employee ID</Label>
-                <Input
-                  id="employeeId"
-                  value={formData.employeeId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
-                  placeholder="e.g., EMP001"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                  placeholder="e.g., John Doe"
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="employeeId">Employee ID</Label>
+              <Input
+                id="employeeId"
+                value={formData.employeeId}
+                onChange={(e) => setFormData(prev => ({ ...prev, employeeId: e.target.value }))}
+                placeholder="e.g., EMP001"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                placeholder="e.g., John Doe"
+                required
+              />
             </div>
 
             <div className="space-y-2">
@@ -294,33 +256,6 @@ export default function OperatorsPage() {
                 value={formData.hireDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, hireDate: e.target.value }))}
               />
-            </div>
-
-            <div className="space-y-3">
-              <Label>Skills</Label>
-              <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto p-3 border rounded-md">
-                {AVAILABLE_SKILLS.map((skill) => (
-                  <div key={skill} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={skill}
-                      checked={formData.skills.includes(skill)}
-                      onCheckedChange={(checked) => handleSkillToggle(skill, checked as boolean)}
-                    />
-                    <Label htmlFor={skill} className="text-sm font-normal">
-                      {skill}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {formData.skills.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {formData.skills.map((skill) => (
-                    <Badge key={skill} variant="secondary" className="text-xs">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
 
             <div className="flex items-center space-x-2">
