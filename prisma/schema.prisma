@@ -77,17 +77,14 @@ model Operator {
 }
 
 model Client {
-  id            Int      @id @default(autoincrement())
-  companyId     Int
-  name          String
-  department    String?
-  contactPerson String?
-  phone         String?
-  email         String?
-  address       String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  companyId  Int
+  name       String
+  region     String?
+  department String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
   productionOrders ProductionOrder[]

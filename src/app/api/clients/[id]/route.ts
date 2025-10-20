@@ -4,11 +4,8 @@ import { z } from 'zod'
 
 const updateClientSchema = z.object({
   name: z.string().min(1, 'Company name is required'),
+  region: z.string().optional(),
   department: z.string().optional(),
-  contactPerson: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  address: z.string().optional(),
   isActive: z.boolean().default(true)
 })
 
@@ -50,11 +47,8 @@ export async function PUT(
       where: { id: parseInt(params.id) },
       data: {
         name: validatedData.name,
+        region: validatedData.region || null,
         department: validatedData.department || null,
-        contactPerson: validatedData.contactPerson || null,
-        phone: validatedData.phone || null,
-        email: validatedData.email || null,
-        address: validatedData.address || null,
         isActive: validatedData.isActive
       }
     })

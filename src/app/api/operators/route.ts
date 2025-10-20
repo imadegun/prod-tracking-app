@@ -11,7 +11,19 @@ const createOperatorSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    // Get the first company (for single-tenant setup)
+    const company = await db.company.findFirst()
+    if (!company) {
+      return NextResponse.json(
+        { error: 'No company found. Please set up a company first.' },
+        { status: 400 }
+      )
+    }
+
     const operators = await db.operator.findMany({
+      where: {
+        companyId: company.id
+      },
       orderBy: [
         { isActive: 'desc' },
         { fullName: 'asc' }
@@ -33,6 +45,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createOperatorSchema.parse(body)
 
+    // Get the first company (for single-tenant setup)
+    const company = await db.company.findFirst()
+    if (!company) {
+      return NextResponse.json(
+        { error: 'No company found. Please set up a company first.' },
+        { status: 400 }
+      )
+    }
+
     // Check if employee ID already exists
     const existingOperator = await db.operator.findFirst({
       where: { employeeId: validatedData.employeeId }
@@ -47,6 +68,7 @@ export async function POST(request: NextRequest) {
 
     const operator = await db.operator.create({
       data: {
+        companyId: company.id,
         employeeId: validatedData.employeeId,
         fullName: validatedData.fullName,
         hireDate: validatedData.hireDate ? new Date(validatedData.hireDate) : null,

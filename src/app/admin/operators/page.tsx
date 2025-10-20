@@ -133,14 +133,19 @@ export default function OperatorsPage() {
         body: JSON.stringify(formData)
       })
 
-      if (!response.ok) throw new Error('Failed to save operator')
+      const responseData = await response.json()
+
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to save operator')
+      }
 
       toast.success(`Operator ${editingOperator ? 'updated' : 'created'} successfully`)
       setDialogOpen(false)
       resetForm()
       fetchOperators()
     } catch (error) {
-      toast.error('Failed to save operator')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save operator'
+      toast.error(errorMessage)
       console.error('Submit error:', error)
     } finally {
       setSubmitLoading(false)

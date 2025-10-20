@@ -24,7 +24,18 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    // Get the first company (for single-tenant setup)
+    const company = await db.company.findFirst()
+    if (!company) {
+      return NextResponse.json(
+        { error: 'No company found. Please set up a company first.' },
+        { status: 400 }
+      )
+    }
+
+    const where: any = {
+      companyId: company.id
+    }
     
     if (operatorId) {
       where.operatorId = parseInt(operatorId)
@@ -113,6 +124,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createAppraisalSchema.parse(body)
 
+    // Get the first company (for single-tenant setup)
+    const company = await db.company.findFirst()
+    if (!company) {
+      return NextResponse.json(
+        { error: 'No company found. Please set up a company first.' },
+        { status: 400 }
+      )
+    }
+
     // Verify operator exists
     const operator = await db.operator.findUnique({
       where: { id: validatedData.operatorId }
@@ -146,6 +166,7 @@ export async function POST(request: NextRequest) {
 
     const appraisal = await db.performanceAppraisal.create({
       data: {
+        companyId: company.id,
         operatorId: validatedData.operatorId,
         productionRecordId: validatedData.productionRecordId,
         appraisalType: validatedData.appraisalType,

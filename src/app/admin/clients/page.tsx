@@ -18,16 +18,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Plus, Edit, Building, MapPin, Mail, Phone, User } from 'lucide-react'
+import { Plus, Edit, Building, MapPin, Globe } from 'lucide-react'
 
 interface Client {
   id: number
   name: string
+  region: string
   department: string
-  contactPerson: string
-  phone: string
-  email: string
-  address: string
   isActive: boolean
   createdAt: string
   updatedAt: string
@@ -40,11 +37,8 @@ export default function ClientsPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [formData, setFormData] = useState({
     name: '',
+    region: '',
     department: '',
-    contactPerson: '',
-    phone: '',
-    email: '',
-    address: '',
     isActive: true
   })
   const [submitLoading, setSubmitLoading] = useState(false)
@@ -72,53 +66,14 @@ export default function ClientsPage() {
       )
     },
     {
-      key: 'contactPerson',
-      title: 'Contact Person',
+      key: 'region',
+      title: 'Region',
       sortable: true,
       filterable: true,
       render: (value) => value ? (
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <Globe className="h-4 w-4 text-muted-foreground" />
           <span>{value}</span>
-        </div>
-      ) : (
-        <span className="text-muted-foreground italic">N/A</span>
-      )
-    },
-    {
-      key: 'phone',
-      title: 'Phone',
-      filterable: true,
-      render: (value) => value ? (
-        <div className="flex items-center gap-2">
-          <Phone className="h-4 w-4 text-muted-foreground" />
-          <span>{value}</span>
-        </div>
-      ) : (
-        <span className="text-muted-foreground italic">N/A</span>
-      )
-    },
-    {
-      key: 'email',
-      title: 'Email',
-      filterable: true,
-      render: (value) => value ? (
-        <div className="flex items-center gap-2">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm">{value}</span>
-        </div>
-      ) : (
-        <span className="text-muted-foreground italic">N/A</span>
-      )
-    },
-    {
-      key: 'address',
-      title: 'Address',
-      filterable: true,
-      render: (value) => value ? (
-        <div className="flex items-center gap-2 max-w-xs">
-          <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-          <span className="text-sm truncate">{value}</span>
         </div>
       ) : (
         <span className="text-muted-foreground italic">N/A</span>
@@ -199,11 +154,8 @@ export default function ClientsPage() {
     setEditingClient(client)
     setFormData({
       name: client.name,
+      region: client.region || '',
       department: client.department || '',
-      contactPerson: client.contactPerson || '',
-      phone: client.phone || '',
-      email: client.email || '',
-      address: client.address || '',
       isActive: client.isActive
     })
     setDialogOpen(true)
@@ -217,11 +169,8 @@ export default function ClientsPage() {
     setEditingClient(null)
     setFormData({
       name: '',
+      region: '',
       department: '',
-      contactPerson: '',
-      phone: '',
-      email: '',
-      address: '',
       isActive: true
     })
   }
@@ -230,7 +179,7 @@ export default function ClientsPage() {
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Clients Management</h1>
-        <p className="text-muted-foreground">Manage client companies and their contact information</p>
+        <p className="text-muted-foreground">Manage client companies and their regional information</p>
       </div>
 
       <DataGrid
@@ -238,7 +187,7 @@ export default function ClientsPage() {
         columns={columns}
         loading={loading}
         title="Clients"
-        searchPlaceholder="Search by company name, contact person, or email..."
+        searchPlaceholder="Search by company name, region, or department..."
         onAdd={() => {
           resetForm()
           setDialogOpen(true)
@@ -272,62 +221,28 @@ export default function ClientsPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., ABC Ceramics Inc."
+                  placeholder="e.g., Bvlgari"
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
+                <Label htmlFor="region">Region</Label>
                 <Input
-                  id="department"
-                  value={formData.department}
-                  onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                  placeholder="e.g., Procurement"
+                  id="region"
+                  value={formData.region}
+                  onChange={(e) => setFormData(prev => ({ ...prev, region: e.target.value }))}
+                  placeholder="e.g., Bali"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Label htmlFor="department">Department</Label>
               <Input
-                id="contactPerson"
-                value={formData.contactPerson}
-                onChange={(e) => setFormData(prev => ({ ...prev, contactPerson: e.target.value }))}
-                placeholder="e.g., John Smith"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="e.g., +1-555-0123"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="e.g., contact@company.com"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Enter full address"
-                rows={3}
+                id="department"
+                value={formData.department}
+                onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                placeholder="e.g., F&B"
               />
             </div>
 

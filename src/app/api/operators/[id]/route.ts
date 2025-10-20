@@ -43,6 +43,15 @@ export async function PUT(
     const body = await request.json()
     const validatedData = updateOperatorSchema.parse(body)
 
+    // Get the first company (for single-tenant setup)
+    const company = await db.company.findFirst()
+    if (!company) {
+      return NextResponse.json(
+        { error: 'No company found. Please set up a company first.' },
+        { status: 400 }
+      )
+    }
+
     // Check if employee ID already exists for another operator
     const existingOperator = await db.operator.findFirst({
       where: {
@@ -61,6 +70,7 @@ export async function PUT(
     const operator = await db.operator.update({
       where: { id: parseInt(params.id) },
       data: {
+        companyId: company.id,
         employeeId: validatedData.employeeId,
         fullName: validatedData.fullName,
         hireDate: validatedData.hireDate ? new Date(validatedData.hireDate) : null,
